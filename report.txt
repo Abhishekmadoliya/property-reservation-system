@@ -1,0 +1,585 @@
+# PROPERTY MANAGEMENT SYSTEM (PMS) - PROJECT REPORT
+
+## Project Overview
+This Property Management System (PMS) is a comprehensive web application designed to facilitate hotel booking and management. The system provides an intuitive interface for users to browse, filter, and book hotel properties, while also offering administrative capabilities for managing users, properties, bookings, and other system aspects.
+
+## Technology Stack
+- **Frontend**: React.js with modern UI components
+- **Backend**: Node.js and Express.js
+- **Database**: MongoDB with Mongoose ODM
+- **Authentication**: JWT (JSON Web Tokens)
+- **HTTP Client**: Axios
+- **Styling**: Tailwind CSS
+
+## System Architecture
+The application follows a client-server architecture with:
+- A React-based single-page application (SPA) frontend
+- RESTful API backend services
+- MongoDB database for data persistence
+- JWT-based authentication system
+
+### System Architecture Diagram
+```
+┌─────────────────┐     ┌─────────────────────────┐     ┌─────────────────┐
+│                 │     │                         │     │                 │
+│   Client Side   │     │      Server Side        │     │   Database      │
+│   (React SPA)   │     │     (Node.js/Express)   │     │   (MongoDB)     │
+│                 │     │                         │     │                 │
+└────────┬────────┘     └──────────┬──────────────┘     └────────┬────────┘
+         │                         │                             │
+         │                         │                             │
+         │                         │                             │
+         │     HTTP/S Requests     │                             │
+         ├────────────────────────►│                             │
+         │                         │                             │
+         │      JSON Responses     │                             │
+         │◄────────────────────────┤                             │
+         │                         │                             │
+         │                         │       Mongoose ODM          │
+         │                         ├────────────────────────────►│
+         │                         │                             │
+         │                         │       Query Results         │
+         │                         │◄────────────────────────────┤
+         │                         │                             │
+┌────────▼────────┐     ┌──────────▼──────────────┐     ┌────────▼────────┐
+│                 │     │                         │     │                 │
+│  User Interface │     │  API Layer:             │     │  Collections:   │
+│  - Home         │     │  - Auth Routes          │     │  - Users        │
+│  - Properties   │     │  - Hotel Routes         │     │  - Hotels       │
+│  - Booking      │     │  - User Routes          │     │  - Categories   │
+│  - User Profile │     │  - Booking Routes       │     │  - Bookings     │
+│  - Admin Panel  │     │  - Payment Routes       │     │  - Payments     │
+│                 │     │  - Filter Routes        │     │  - Reviews      │
+└─────────────────┘     │  - Admin Routes         │     │                 │
+                        └─────────────────────────┘     └─────────────────┘
+
+ Authentication Flow:
+┌─────────┐     ┌─────────────┐     ┌──────────────┐     ┌─────────────────┐
+│  Login  ├────►│ Verify User ├────►│  Generate    ├────►│ Return JWT      │
+│ Request │     │ Credentials │     │  JWT Token   │     │ Token to Client │
+└─────────┘     └─────────────┘     └──────────────┘     └─────────────────┘
+```
+
+## API Endpoints Documentation
+
+### Authentication APIs (`/api/auth/`)
+```
+POST /api/auth/register - Register a new user
+POST /api/auth/login - Authenticate and receive JWT token
+POST /api/auth/logout - Logout and invalidate token
+GET /api/auth/me - Get current user information
+```
+
+### Hotel APIs (`/api/hotels/`)
+```
+GET /api/hotels - List all hotels with optional filtering
+GET /api/hotels/:id - Get detailed information for a specific hotel
+POST /api/hotels - Add a new hotel (admin only)
+PUT /api/hotels/:id - Update hotel information (admin only)
+DELETE /api/hotels/:id - Remove a hotel (admin only)
+```
+
+### Category APIs (`/api/categories/`)
+```
+GET /api/categories - List all property categories
+GET /api/categories/:id - Get specific category details
+POST /api/categories - Create a new category (admin only)
+PUT /api/categories/:id - Update a category (admin only)
+DELETE /api/categories/:id - Remove a category (admin only)
+```
+
+### User APIs (`/api/users/`)
+```
+GET /api/users - List all users (admin only)
+GET /api/users/:id - Get user details (own profile or admin)
+PUT /api/users/:id - Update user information (own profile or admin)
+DELETE /api/users/:id - Remove a user (admin only)
+```
+
+### Booking APIs (`/api/bookings/`)
+```
+GET /api/bookings - List all bookings (filtered by user for regular users)
+GET /api/bookings/:id - Get booking details
+POST /api/bookings - Create a new booking
+PUT /api/bookings/:id - Update booking status
+DELETE /api/bookings/:id - Cancel a booking
+```
+
+### Review APIs (`/api/reviews/`)
+```
+GET /api/reviews/hotel/:hotelId - Get all reviews for a specific hotel
+POST /api/reviews/hotel/:hotelId - Add a new review for a hotel
+PUT /api/reviews/:id - Update an existing review (own review only)
+DELETE /api/reviews/:id - Remove a review (own review or admin)
+```
+
+### Payment APIs (`/api/payments/`)
+```
+POST /api/payments - Process a new payment
+GET /api/payments/history - View payment history (own payments or admin)
+POST /api/payments/verify - Webhook for payment verification
+GET /api/payments/:id - Get specific payment details
+```
+
+### Filter APIs (`/api/filters/`)
+```
+GET /api/filters - Get all available filter options
+GET /api/filters/locations - Get location-based filter options
+GET /api/filters/price-range - Get price range filter options
+GET /api/filters/amenities - Get amenities filter options
+```
+
+### Admin APIs (`/api/admin/`)
+```
+GET /api/admin/dashboard - Get statistics and dashboard data
+GET /api/admin/users - Get all users
+PUT /api/admin/users/:id - Update user information
+DELETE /api/admin/users/:id - Remove a user
+GET /api/admin/hotels - Get all hotels with management options
+GET /api/admin/bookings - Get all bookings across the system
+```
+
+## User Roles and Permissions
+
+### User Role Differentiation
+The system implements a role-based access control system with two primary user types:
+
+1. **Regular Users**
+   - Account is created with `isAdmin: false` by default
+   - Can browse and book properties
+   - Can manage their own profile, bookings, and reviews
+   - Cannot access admin functionalities
+   - Protected by `verifyUser` middleware
+
+2. **Admin Users**
+   - Account has `isAdmin: true` set in the database
+   - Full access to all system functionalities
+   - Can manage all users, properties, bookings, and system settings
+   - Protected by both `verifyUser` and `verifyAdmin` middleware
+   - Access to analytical data and dashboard
+
+### Implementation Details
+
+#### Database Schema Level
+In the user schema, an `isAdmin` boolean field distinguishes between regular and admin users:
+```javascript
+const userSchema = new mongoose.Schema({
+  // Other user fields
+  isAdmin: { 
+    type: Boolean, 
+    default: false 
+  }
+});
+```
+
+#### Authentication Middleware
+Two distinct middleware functions handle role-based authorization:
+
+```javascript
+// Regular user authentication
+const verifyUser = (req, res, next) => {
+  const token = req.cookies.token;
+  if (!token) return res.status(401).json({ message: "Not authenticated" });
+  
+  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+    if (err) return res.status(403).json({ message: "Token is not valid" });
+    req.user = user;
+    next();
+  });
+};
+
+// Admin authorization (used after verifyUser)
+const verifyAdmin = (req, res, next) => {
+  if (req.user.isAdmin) {
+    next();
+  } else {
+    return res.status(403).json({ message: "Not authorized as admin" });
+  }
+};
+```
+
+#### Route Protection
+Routes are protected based on the required access level:
+```javascript
+// Regular user route (any authenticated user)
+router.get('/bookings', verifyUser, getUserBookings);
+
+// Admin-only route
+router.get('/users', verifyUser, verifyAdmin, getAllUsers);
+```
+
+#### Controller Logic
+Controllers implement additional permission checks:
+```javascript
+const updateUser = async (req, res) => {
+  try {
+    // Only allow users to update their own profile, unless they're admin
+    if (!req.user.isAdmin && req.user.id !== req.params.id) {
+      return res.status(403).json({ message: "You can only update your own account" });
+    }
+    
+    // Proceed with update logic
+    // ...
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+```
+
+#### Frontend Authorization
+UI rendering is conditional based on user role:
+```javascript
+{user && user.isAdmin && (
+  <AdminDashboard />
+)}
+
+{user && !user.isAdmin && (
+  <UserDashboard />
+)}
+```
+
+## Key Features
+
+### For Users
+1. **Property Search & Filtering**: Users can search for properties using various filters (location, price, amenities)
+2. **Booking Management**: Users can make, view, and cancel their bookings
+3. **Review System**: Users can leave and update reviews for properties they've booked
+4. **User Profile**: Personalized profiles with booking history and preferences
+5. **Payment Processing**: Secure payment handling for bookings
+
+### For Administrators
+1. **Dashboard & Analytics**: Overview of system activity and key metrics
+2. **User Management**: Ability to create, update, and remove user accounts
+3. **Property Management**: Tools to add, update, and remove property listings
+4. **Booking Oversight**: View and manage all bookings in the system
+5. **Content Management**: Control over categories, amenities, and other content
+
+## UI/UX Design
+The application features a modern, responsive design with:
+- Split-screen layouts for registration and login pages
+- Full-width navigation and filter bars
+- Responsive property cards and detailed property views
+- Clean, consistent form elements
+- Modern visual aesthetics with proper spacing and typography
+- Optimized mobile experience
+
+## Future Enhancements
+1. **Advanced Filtering**: Implement more sophisticated search algorithms
+2. **Messaging System**: Add direct communication between users and property managers
+3. **Analytics Dashboard**: Enhance the admin dashboard with more detailed analytics
+4. **Multi-language Support**: Add internationalization for global users
+5. **Integration with External Systems**: Connect with popular booking platforms
+
+## Conclusion
+This Property Management System provides a comprehensive solution for hotel booking and management, with clearly defined user roles, secure authentication, and a modern user interface. The system's RESTful API architecture ensures scalability and maintainability for future development.
+
+## Appendix
+
+### A. Sample Booking Flow Sequence Diagram
+```
+┌─────┐          ┌─────────┐          ┌──────────┐          ┌────────┐          ┌─────────┐
+│User │          │Frontend │          │API Server│          │Database│          │Payment  │
+│     │          │         │          │          │          │        │          │Gateway  │
+└──┬──┘          └────┬────┘          └────┬─────┘          └───┬────┘          └────┬────┘
+   │                  │                    │                     │                    │
+   │ 1. View Property │                    │                     │                    │
+   │─────────────────►│                    │                     │                    │
+   │                  │ 2. Get Property    │                     │                    │
+   │                  │ Details            │                     │                    │
+   │                  │───────────────────►│                     │                    │
+   │                  │                    │ 3. Query Property   │                    │
+   │                  │                    │────────────────────►│                    │
+   │                  │                    │ 4. Return Property  │                    │
+   │                  │                    │◄────────────────────│                    │
+   │                  │ 5. Display Property│                     │                    │
+   │                  │◄───────────────────│                     │                    │
+   │ 6. Select Dates  │                    │                     │                    │
+   │ & Guests         │                    │                     │                    │
+   │─────────────────►│                    │                     │                    │
+   │                  │ 7. Check           │                     │                    │
+   │                  │ Availability       │                     │                    │
+   │                  │───────────────────►│                     │                    │
+   │                  │                    │ 8. Query Bookings   │                    │
+   │                  │                    │────────────────────►│                    │
+   │                  │                    │ 9. Return Available │                    │
+   │                  │                    │ Dates               │                    │
+   │                  │                    │◄────────────────────│                    │
+   │                  │ 10. Show           │                     │                    │
+   │                  │ Availability       │                     │                    │
+   │                  │◄───────────────────│                     │                    │
+   │ 11. Confirm      │                    │                     │                    │
+   │ Booking          │                    │                     │                    │
+   │─────────────────►│                    │                     │                    │
+   │                  │ 12. Initiate       │                     │                    │
+   │                  │ Payment            │                     │                    │
+   │                  │───────────────────►│                     │                    │
+   │                  │                    │                     │ 13. Payment        │
+   │                  │                    │                     │ Request            │
+   │                  │                    │────────────────────────────────────────►│
+   │                  │                    │                     │ 14. Payment        │
+   │                  │                    │                     │ Response           │
+   │                  │                    │◄────────────────────────────────────────│
+   │                  │                    │ 15. Create Booking  │                    │
+   │                  │                    │────────────────────►│                    │
+   │                  │                    │ 16. Confirm Booking │                    │
+   │                  │                    │◄────────────────────│                    │
+   │                  │ 17. Show           │                     │                    │
+   │                  │ Confirmation       │                     │                    │
+   │                  │◄───────────────────│                     │                    │
+   │ 18. View         │                    │                     │                    │
+   │ Confirmation     │                    │                     │                    │
+   │◄─────────────────│                    │                     │                    │
+   │                  │                    │                     │                    │
+```
+
+### B. Technical Implementation Details
+
+#### B.1 Frontend Implementation
+
+##### Component Structure
+```
+client/
+├── public/
+│   ├── assets/
+│   │   └── images/
+├── src/
+│   ├── components/
+│   │   ├── Navbar.jsx
+│   │   ├── FilterBar.jsx
+│   │   ├── PropertyCard.jsx
+│   │   ├── BookingForm.jsx
+│   │   ├── DatePicker.jsx
+│   │   └── ...
+│   ├── pages/
+│   │   ├── Home.jsx
+│   │   ├── PropertyDetails.jsx
+│   │   ├── Auth/
+│   │   │   ├── Login.jsx
+│   │   │   └── Register.jsx
+│   │   ├── User/
+│   │   │   ├── Profile.jsx
+│   │   │   └── Bookings.jsx
+│   │   └── Admin/
+│   │       ├── Dashboard.jsx
+│   │       ├── UserManagement.jsx
+│   │       └── PropertyManagement.jsx
+│   ├── context/
+│   │   ├── AuthContext.jsx
+│   │   └── FilterContext.jsx
+│   ├── api/
+│   │   ├── index.js
+│   │   ├── auth.js
+│   │   ├── properties.js
+│   │   └── ...
+│   ├── utils/
+│   │   ├── formatters.js
+│   │   └── validators.js
+│   ├── App.jsx
+│   └── index.jsx
+```
+
+##### API Integration
+The frontend communicates with the backend through a centralized API layer using Axios:
+
+```javascript
+// Example from api/index.js
+import axios from 'axios';
+
+const BASE_URL = 'http://localhost:8765';
+
+const api = axios.create({
+  baseURL: BASE_URL,
+  withCredentials: true,
+  headers: {
+    'Content-Type': 'application/json'
+  }
+});
+
+// Request interceptor for adding the auth token
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+export default api;
+```
+
+##### Authentication Flow
+User authentication is managed using JWT tokens stored in local storage and HTTP-only cookies:
+
+```javascript
+// Example from AuthContext.jsx
+const login = async (credentials) => {
+  setLoading(true);
+  try {
+    const { data } = await api.post('/api/auth/login', credentials);
+    localStorage.setItem('token', data.token);
+    setUser(data.user);
+    return true;
+  } catch (error) {
+    setError(error.response?.data?.message || 'Login failed');
+    return false;
+  } finally {
+    setLoading(false);
+  }
+};
+```
+
+#### B.2 Backend Implementation
+
+##### Server Structure
+```
+backend/
+├── config/
+│   ├── db.js
+│   └── passport.js
+├── controllers/
+│   ├── authController.js
+│   ├── hotelController.js
+│   ├── bookingController.js
+│   └── ...
+├── middleware/
+│   ├── auth.js
+│   └── validation.js
+├── models/
+│   ├── User.js
+│   ├── Hotel.js
+│   ├── Booking.js
+│   └── ...
+├── routes/
+│   ├── auth.router.js
+│   ├── hotel.router.js
+│   ├── booking.router.js
+│   └── ...
+├── utils/
+│   ├── errorHandler.js
+│   └── logger.js
+├── server.js
+└── .env
+```
+
+##### Database Schema Design
+The MongoDB schemas are designed to optimize query performance and data relationships:
+
+```javascript
+// Example from models/Hotel.js
+const hotelSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  description: {
+    type: String,
+    required: true
+  },
+  address: {
+    street: String,
+    city: String,
+    state: String,
+    zipCode: String,
+    country: String
+  },
+  location: {
+    type: { type: String, default: 'Point' },
+    coordinates: [Number] // [longitude, latitude]
+  },
+  price: {
+    type: Number,
+    required: true
+  },
+  images: [String],
+  amenities: [String],
+  rating: {
+    type: Number,
+    min: 0,
+    max: 5,
+    default: 0
+  },
+  category: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Category'
+  },
+  host: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  }
+}, { timestamps: true });
+
+// Index for location-based queries
+hotelSchema.index({ location: '2dsphere' });
+// Index for faster category filtering
+hotelSchema.index({ category: 1 });
+```
+
+##### Authentication Middleware
+JWT-based authentication is implemented with middleware to protect routes:
+
+```javascript
+// Example from middleware/auth.js
+const jwt = require('jsonwebtoken');
+const User = require('../models/User');
+
+exports.verifyUser = async (req, res, next) => {
+  try {
+    const token = req.cookies.token || req.header('Authorization')?.replace('Bearer ', '');
+    
+    if (!token) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+    
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await User.findById(decoded.id).select('-password');
+    
+    if (!user) {
+      return res.status(401).json({ message: 'User not found' });
+    }
+    
+    req.user = user;
+    next();
+  } catch (error) {
+    return res.status(401).json({ message: 'Invalid token' });
+  }
+};
+
+exports.verifyAdmin = (req, res, next) => {
+  if (req.user && req.user.isAdmin) {
+    next();
+  } else {
+    return res.status(403).json({ message: 'Admin access required' });
+  }
+};
+```
+
+### C. Security Considerations
+
+1. **Authentication**: JWT tokens with proper expiration and HTTP-only cookies
+2. **Password Security**: Bcrypt hashing with salt rounds
+3. **Input Validation**: Server-side validation using middleware
+4. **CORS Policy**: Restricted to specific origins
+5. **Rate Limiting**: API rate limiting to prevent brute force attacks
+6. **Error Handling**: Generic error messages to users to prevent information leakage
+7. **Sensitive Data**: Environment variables for API keys and database credentials
+
+### D. Testing Strategy
+
+1. **Unit Testing**: Individual components and functions
+2. **Integration Testing**: API endpoints and database operations
+3. **End-to-End Testing**: Complete user flows
+4. **User Acceptance Testing**: Real-world scenarios with stakeholders
+5. **Load Testing**: System performance under heavy load
+
+### E. Deployment Considerations
+
+1. **Environment Setup**: Development, Staging, and Production
+2. **Continuous Integration**: Automated testing and deployment pipelines
+3. **Monitoring**: Health checks and error tracking
+4. **Backup Strategy**: Regular database backups
+5. **Scaling Plans**: Horizontal scaling for increased load

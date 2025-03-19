@@ -6,6 +6,103 @@ import PropertyCard from '../components/PropertyCard';
 import Navbar from '../components/Navbar';
 import FilterBar from '../components/FilterBar';
 
+// Define potential API base URLs to try
+const API_URLS = [
+  'http://localhost:8765',
+  'http://localhost:3000',
+  'http://localhost:3500',
+  'http://localhost:5000',
+  'http://localhost:8080'
+];
+
+// Fallback static data if API is unavailable
+const FALLBACK_DATA = [
+  {
+    _id: "fallback1",
+    name: "Seaside Resort",
+    category: "Beach",
+    image: "https://a0.muscache.com/im/pictures/miso/Hosting-26117817/original/9da40e3c-5846-4359-bb41-05c27b09a8f5.jpeg?im_w=720",
+    imageArr: [
+      "https://a0.muscache.com/im/pictures/miso/Hosting-578733555164036351/original/fc0129d6-02df-4782-92e9-051a881c67a5.jpeg?im_w=720",
+      "https://a0.muscache.com/im/pictures/miso/Hosting-578733555164036351/original/694d278e-ff0d-4c08-b549-de3a07313be8.jpeg?im_w=720"
+    ],
+    address: "123 Beach Road",
+    city: "Miami",
+    state: "Florida",
+    country: "USA",
+    price: 2499,
+    rating: 4.7,
+    numberOfBathrooms: 2,
+    numberOfBeds: 3,
+    numberOfguest: 6,
+    numberOfBedrooms: 2,
+    numberOfStudies: 1,
+    hostName: "Sarah",
+    hostJoinedOn: "January 2020",
+    ameneties: ["Kitchen", "Wifi", "Pool", "Beach Access"],
+    healthAndSafety: ["Smoke alarm", "Carbon monoxide alarm"],
+    houseRules: ["Check-in: 3:00 pm", "Check out: 11:00 am", "No parties"],
+    propertyType: "Villa",
+    isCancelable: true
+  },
+  {
+    _id: "fallback2",
+    name: "Mountain Cabin",
+    category: "Mountain",
+    image: "https://a0.muscache.com/im/pictures/90d0b224-16e2-41c1-9819-6002749a193e.jpg?im_w=720",
+    imageArr: [
+      "https://a0.muscache.com/im/pictures/miso/Hosting-53407714/original/f3cf4c09-5419-4f1c-b47c-01987c09b4df.jpeg?im_w=720",
+      "https://a0.muscache.com/im/pictures/c1947f8b-da1e-4800-badf-ed51be3e90da.jpg?im_w=720"
+    ],
+    address: "45 Pine Trail",
+    city: "Aspen",
+    state: "Colorado",
+    country: "USA",
+    price: 1899,
+    rating: 4.9,
+    numberOfBathrooms: 2,
+    numberOfBeds: 4,
+    numberOfguest: 8,
+    numberOfBedrooms: 3,
+    numberOfStudies: 0,
+    hostName: "Michael",
+    hostJoinedOn: "March 2019",
+    ameneties: ["Fireplace", "Wifi", "Heating", "Mountain View"],
+    healthAndSafety: ["Smoke alarm", "First aid kit"],
+    houseRules: ["Check-in: 4:00 pm", "Check out: 10:00 am", "No smoking"],
+    propertyType: "Cabin",
+    isCancelable: true
+  },
+  {
+    _id: "fallback3",
+    name: "Urban Apartment",
+    category: "City",
+    image: "https://a0.muscache.com/im/pictures/miso/Hosting-26117817/original/9da40e3c-5846-4359-bb41-05c27b09a8f5.jpeg?im_w=720",
+    imageArr: [
+      "https://a0.muscache.com/im/pictures/miso/Hosting-578733555164036351/original/fc0129d6-02df-4782-92e9-051a881c67a5.jpeg?im_w=720",
+      "https://a0.muscache.com/im/pictures/miso/Hosting-578733555164036351/original/694d278e-ff0d-4c08-b549-de3a07313be8.jpeg?im_w=720"
+    ],
+    address: "789 Downtown Ave",
+    city: "New York",
+    state: "New York",
+    country: "USA",
+    price: 1499,
+    rating: 4.5,
+    numberOfBathrooms: 1,
+    numberOfBeds: 1,
+    numberOfguest: 2,
+    numberOfBedrooms: 1,
+    numberOfStudies: 1,
+    hostName: "Emily",
+    hostJoinedOn: "June 2021",
+    ameneties: ["Wifi", "Kitchen", "Workspace", "Elevator"],
+    healthAndSafety: ["Smoke alarm", "Carbon monoxide alarm"],
+    houseRules: ["Check-in: 2:00 pm", "Check out: 11:00 am", "No pets"],
+    propertyType: "Apartment",
+    isCancelable: true
+  }
+];
+
 const Home = () => {
     const [activeFilter, setActiveFilter] = useState('All');
     const [searchQuery, setSearchQuery] = useState('');
@@ -15,12 +112,44 @@ const Home = () => {
 
     useEffect(() => {
       const fetchProperties = async () => {
+        // Try each API URL until one works
+        let data = [];
+        let lastError = null;
+        let foundWorkingApi = false;
+
         try {
           setLoading(true);
-          const response = await axios.get('http://localhost:3000/api/hotels');
           
-          // Transform API data to match our property structure
-          const transformedData = response.data.map(hotel => ({
+          // Try each API URL in sequence
+          for (const baseUrl of API_URLS) {
+            try {
+              console.log(`Trying API endpoint: ${baseUrl}/api/hotels`);
+              const response = await axios.get(`${baseUrl}/api/hotels`);
+              console.log('API Response:', response);
+              
+              // Check if we have data in the expected format
+              if (response.data && (Array.isArray(response.data) || response.data.data)) {
+                // Access the data array from the proper structure
+                data = Array.isArray(response.data) ? response.data : 
+                      (response.data.data || []);
+                
+                console.log(`Successfully connected to: ${baseUrl}`);
+                foundWorkingApi = true;
+                break; // Exit the loop if we found a working API
+              }
+            } catch (err) {
+              console.log(`API at ${baseUrl} failed:`, err.message);
+              lastError = err;
+              // Continue to the next URL
+            }
+          }
+          
+          if (!foundWorkingApi) {
+            console.log('All API endpoints failed, using fallback data');
+            data = FALLBACK_DATA;
+          }
+          
+          const transformedData = data.map(hotel => ({
             id: hotel._id,
             title: hotel.name,
             formattedLocation: `${hotel.address}, ${hotel.city}, ${hotel.state}`,
@@ -38,7 +167,6 @@ const Home = () => {
             details: {
               beds: hotel.numberOfBeds,
               bedrooms: hotel.numberOfBedrooms,
-              
               bathrooms: hotel.numberOfBathrooms,
               maxGuests: hotel.numberOfguest,
               studies: hotel.numberOfStudies
