@@ -24,8 +24,6 @@ const PropertyDetails = () => {
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState('');
   const [isEditing, setIsEditing] = useState(false);
-  const [userHasBooking, setUserHasBooking] = useState(false);
-  const [checkingBooking, setCheckingBooking] = useState(false);
 
   const fallbackImage = "https://placehold.co/800x600/e2e8f0/1e293b?text=No+Image+Available";
 
@@ -42,46 +40,6 @@ const PropertyDetails = () => {
     const token = localStorage.getItem('token');
     setIsUserLoggedIn(!!token);
   }, []);
-
-  // Check if user has booked this property
-  const checkUserBooking = async () => {
-    if (!isUserLoggedIn) return;
-    
-    try {
-      setCheckingBooking(true);
-      const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:3000/api/users/bookings', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      
-      if (!response.ok) {
-        console.error('Failed to check user bookings:', await response.text());
-        return;
-      }
-      
-      const data = await response.json();
-      
-      // Check if user has any booking for this property
-      const hasBookedProperty = data.data.some(booking => 
-        booking.hotelId === id && ['confirmed', 'completed'].includes(booking.status)
-      );
-      
-      setUserHasBooking(hasBookedProperty);
-    } catch (error) {
-      console.error('Error checking user bookings:', error);
-    } finally {
-      setCheckingBooking(false);
-    }
-  };
-  
-  // Check if user is logged in and has booked
-  useEffect(() => {
-    if (isUserLoggedIn && id) {
-      checkUserBooking();
-    }
-  }, [isUserLoggedIn, id]);
 
   const fetchPropertyDetails = async () => {
     try {
@@ -131,18 +89,70 @@ const PropertyDetails = () => {
 
       console.log('Transformed property data:', transformedData);
       setProperty(transformedData);
-      setError(null);
-      
-      // Fetch reviews after setting property
-      fetchReviews();
-    } catch (err) {
-      console.error('Error fetching property details:', err);
-      setError('Unable to load property details. Please try again later.');
-      setProperty(null);
-    } finally {
-      setLoading(false);
-    }
-  };
+    
+    const fetchPropertyDetails = async () => {
+      try {
+        setLoading(true);
+        const response = await axios.get(`http://localhost:3000/api/hotels/${id}`);
+        
+        // Check if we have data in the response
+        if (!response.data) {
+          throw new Error('No data received from the server');
+        }
+        
+        // Access the data properly based on the API response structure
+        const hotelData = response.data.data || response.data;
+        
+        if (!hotelData) {
+          throw new Error('Invalid data format received from the server');
+        }
+
+        // Transform API data to match our property structure
+        const transformedData = {
+          id: hotelData._id || id,
+          title: hotelData.name || 'Property Details',
+          location: `${hotelData.address || ''}, ${hotelData.city || ''}, ${hotelData.state || ''}`,
+          price: hotelData.price || 0,
+          rating: hotelData.rating || 4.5,
+          description: hotelData.description || `Experience a wonderful stay at this property featuring ${hotelData.numberOfBedrooms || 0} bedrooms and ${hotelData.numberOfBathrooms || 0} bathrooms, perfect for up to ${hotelData.numberOfguest || 2} guests.`,
+          images: hotelData.imageArr || [hotelData.image] || [],
+          amenities: hotelData.ameneties || [],
+          host: {
+            name: hotelData.hostName || 'Host',
+            joinedDate: hotelData.hostJoinedOn || 'Recently',
+            image: "https://ui-avatars.com/api/?name=" + encodeURIComponent(hotelData.hostName || 'Host')
+          },
+          details: {
+            beds: hotelData.numberOfBeds || 1,
+            bedrooms: hotelData.numberOfBedrooms || 1,
+            bathrooms: hotelData.numberOfBathrooms || 1,
+            maxGuests: hotelData.numberOfguest || 2,
+            studies: hotelData.numberOfStudies || 0
+          },
+          rules: {
+            houseRules: hotelData.houseRules || [],
+            healthAndSafety: hotelData.healthAndSafety || [],
+            isCancelable: hotelData.isCancelable !== false
+          }
+        };
+
+        console.log('Transformed property data:', transformedData);
+        setProperty(transformedData);
+        setError(null);
+        
+        // Fetch reviews after setting property
+        fetchReviews();
+      } catch (err) {
+        console.error('Error fetching property details:', err);
+        setError('Unable to load property details. Please try again later.');
+        setProperty(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPropertyDetails();
+  }, [id]);
 
   // Fetch reviews for this property
   const fetchReviews = async () => {
@@ -214,11 +224,6 @@ const PropertyDetails = () => {
 
     if (!isUserLoggedIn) {
       setReviewSubmitError("Please log in to submit a review");
-      return;
-    }
-    
-    if (!userHasBooking) {
-      setReviewSubmitError("You need to book and stay at this property before leaving a review");
       return;
     }
 
@@ -298,77 +303,9 @@ const PropertyDetails = () => {
     return imageErrors[index] ? fallbackImage : image;
   };
 
-  const handleBooking = async () => {
-    if (!isUserLoggedIn) {
-      alert("Please log in to book this property");
-      navigate('/login', { state: { from: `/property/${id}` } });
-      return;
-    }
-
-    // Validate dates
-    if (!selectedDates.checkIn || !selectedDates.checkOut) {
-      alert("Please select check-in and check-out dates");
-      return;
-    }
-
-    // Calculate number of nights
-    const checkInDate = new Date(selectedDates.checkIn);
-    const checkOutDate = new Date(selectedDates.checkOut);
-    
-    if (checkInDate >= checkOutDate) {
-      alert("Check-out date must be after check-in date");
-      return;
-    }
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    if (checkInDate < today) {
-      alert("Check-in date cannot be in the past");
-      return;
-    }
-    
-    const nights = Math.ceil((checkOutDate - checkInDate) / (1000 * 60 * 60 * 24));
-    const totalPrice = property.price * nights;
-
-    try {
-      // Get token for authentication
-      const token = localStorage.getItem('token');
-      if (!token) {
-        alert("Your session has expired. Please log in again.");
-        navigate('/login', { state: { from: `/property/${id}` } });
-        return;
-      }
-
-      // Create booking
-      const response = await fetch('http://localhost:3000/api/bookings', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          hotelId: property.id,
-          checkIn: selectedDates.checkIn,
-          checkOut: selectedDates.checkOut,
-          guests: guests,
-          totalPrice: totalPrice
-        })
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to create booking');
-      }
-
-      const data = await response.json();
-      
-      alert('Booking successful! Thank you for choosing our property.');
-      navigate('/bookings'); // Redirect to bookings page
-    } catch (error) {
-      console.error('Error creating booking:', error);
-      alert(`Booking failed: ${error.message}`);
-    }
+  const handleBooking = () => {
+    // Implement booking logic here
+    console.log('Booking:', { propertyId: id, selectedDates, guests });
   };
 
   // Format date for reviews
@@ -464,7 +401,7 @@ const PropertyDetails = () => {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* <Navbar /> */}
+      <Navbar />
       
       {/* Back Button */}
       <div className="w-full px-4 sm:px-6 lg:px-8 py-4">
@@ -482,9 +419,9 @@ const PropertyDetails = () => {
       <main className="w-full px-4 sm:px-6 lg:px-8 pb-12">
         {/* Property Header */}
         <div className="mb-6">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">{property.title}</h1>
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">{property.title}</h1>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
               <div className="flex items-center gap-1">
                 <Star size={20} className="fill-current text-yellow-400" />
                 <span className="font-medium">{property.rating}</span>
@@ -495,35 +432,35 @@ const PropertyDetails = () => {
               </div>
             </div>
             <div className="flex gap-4">
-              <button className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg hover:bg-gray-100">
+              <button className="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-gray-100">
                 <Share size={20} />
-                <span className="hidden sm:inline">Share</span>
+                <span>Share</span>
               </button>
-              <button className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg hover:bg-gray-100">
+              <button className="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-gray-100">
                 <Heart size={20} />
-                <span className="hidden sm:inline">Save</span>
+                <span>Save</span>
               </button>
             </div>
           </div>
         </div>
 
         {/* Image Gallery */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
-          <div className="h-[300px] sm:h-[480px]">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8 rounded-2xl overflow-hidden">
+          <div className="h-[480px]">
             <img 
               src={getImageUrl(property.images[0], 0)} 
               alt="" 
-              className="w-full h-full object-cover rounded-lg"
+              className="w-full h-full object-cover"
               onError={() => handleImageError(0)}
             />
           </div>
           <div className="grid grid-cols-2 gap-4">
             {property.images.slice(1, 5).map((image, index) => (
-              <div key={index} className="h-[146px] sm:h-[236px]">
+              <div key={index} className="h-[236px]">
                 <img 
                   src={getImageUrl(image, index + 1)} 
                   alt="" 
-                  className="w-full h-full object-cover rounded-lg"
+                  className="w-full h-full object-cover"
                   onError={() => handleImageError(index + 1)}
                 />
               </div>
@@ -532,12 +469,12 @@ const PropertyDetails = () => {
         </div>
 
         {/* Main Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12">
           <div className="lg:col-span-2">
             {/* Host Info */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-6 border-b gap-4">
+            <div className="flex items-center justify-between pb-6 border-b">
               <div>
-                <h2 className="text-xl sm:text-2xl font-semibold mb-2">Hosted by {property.host.name}</h2>
+                <h2 className="text-2xl font-semibold mb-2">Hosted by {property.host.name}</h2>
                 <div className="text-gray-500">
                   <p>Host since {property.host.joinedDate}</p>
                 </div>
@@ -547,8 +484,8 @@ const PropertyDetails = () => {
 
             {/* Property Details */}
             <div className="py-6 border-b">
-              <h3 className="text-lg sm:text-xl font-semibold mb-4">Property Details</h3>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <h3 className="text-xl font-semibold mb-4">Property Details</h3>
+              <div className="grid grid-cols-2 gap-4">
                 <div className="flex items-center gap-2">
                   <Users size={20} className="text-gray-500" />
                   <span>{property.details.maxGuests} guests</span>
@@ -567,14 +504,14 @@ const PropertyDetails = () => {
 
             {/* Description */}
             <div className="py-6 border-b">
-              <h3 className="text-lg sm:text-xl font-semibold mb-4">About this place</h3>
+              <h3 className="text-xl font-semibold mb-4">About this place</h3>
               <p className="text-gray-600 leading-relaxed">{property.description}</p>
             </div>
 
             {/* Amenities */}
             <div className="py-6 border-b">
-              <h3 className="text-lg sm:text-xl font-semibold mb-4">What this place offers</h3>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+              <h3 className="text-xl font-semibold mb-4">What this place offers</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {property.amenities && property.amenities.length > 0 ? (
                   property.amenities.map((amenity, index) => (
                     <div key={index} className="flex items-center gap-3">
@@ -590,7 +527,7 @@ const PropertyDetails = () => {
 
             {/* House Rules */}
             <div className="py-6 border-b">
-              <h3 className="text-lg sm:text-xl font-semibold mb-4">House Rules</h3>
+              <h3 className="text-xl font-semibold mb-4">House Rules</h3>
               <div className="space-y-3">
                 {property.rules.houseRules && property.rules.houseRules.length > 0 ? (
                   property.rules.houseRules.map((rule, index) => (
@@ -607,7 +544,7 @@ const PropertyDetails = () => {
 
             {/* Health & Safety */}
             <div className="py-6 border-b">
-              <h3 className="text-lg sm:text-xl font-semibold mb-4">Health & Safety</h3>
+              <h3 className="text-xl font-semibold mb-4">Health & Safety</h3>
               <div className="space-y-3">
                 {property.rules.healthAndSafety && property.rules.healthAndSafety.length > 0 ? (
                   property.rules.healthAndSafety.map((item, index) => (
@@ -624,22 +561,22 @@ const PropertyDetails = () => {
             
             {/* Reviews Section */}
             <div className="py-6 border-b">
-              <h3 className="text-lg sm:text-xl font-semibold mb-6">Guest Reviews</h3>
+              <h3 className="text-xl font-semibold mb-6">Guest Reviews</h3>
               
               {/* Review Overview */}
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-6">
+              <div className="flex items-center gap-2 mb-6">
                 <div className="flex items-center">
                   <Star size={24} className="fill-current text-yellow-400" />
                   <span className="text-2xl font-semibold ml-2">{property.rating}</span>
                 </div>
-                <span className="hidden sm:inline text-gray-500">·</span>
+                <span className="text-gray-500 ml-2">·</span>
                 <span className="text-gray-500">{reviews.length} reviews</span>
               </div>
               
               {/* Review Form for Logged In Users */}
               {isUserLoggedIn && (
-                <div id="reviewForm" className="bg-gray-50 p-4 sm:p-6 rounded-lg mb-8">
-                  <h4 className="text-base sm:text-lg font-semibold mb-4">
+                <div id="reviewForm" className="bg-gray-50 p-6 rounded-lg mb-8">
+                  <h4 className="text-lg font-semibold mb-4">
                     {userReview.comment ? 'Edit Your Review' : 'Write a Review'}
                   </h4>
                   
@@ -655,95 +592,76 @@ const PropertyDetails = () => {
                     </div>
                   )}
                   
-                  {checkingBooking ? (
-                    <div className="text-center py-4">
-                      <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-500 mx-auto"></div>
-                      <p className="mt-2 text-gray-500">Checking your booking status...</p>
-                    </div>
-                  ) : userHasBooking || userReview.id ? (
-                    <form onSubmit={handleReviewSubmit} className="w-full px-0 sm:px-4 py-6">
-                      <div className="mb-4">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Rating
-                        </label>
-                        <div className="flex space-x-1">
-                          {[1, 2, 3, 4, 5].map((star) => (
-                            <button
-                              key={star}
-                              type="button"
-                              onClick={() => setRating(star)}
-                              className="focus:outline-none"
-                            >
-                              <svg
-                                className={`w-6 h-6 ${
-                                  star <= rating ? 'text-yellow-400' : 'text-gray-300'
-                                }`}
-                                fill="currentColor"
-                                viewBox="0 0 20 20"
-                                xmlns="http://www.w3.org/2000/svg"
-                              >
-                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                              </svg>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                      
-                      <div className="mb-4">
-                        <label
-                          htmlFor="comment"
-                          className="block text-sm font-medium text-gray-700 mb-1"
-                        >
-                          Comment
-                        </label>
-                        <textarea
-                          id="comment"
-                          rows="4"
-                          value={comment}
-                          onChange={(e) => setComment(e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                          placeholder="Share your experience with this property..."
-                          required
-                        ></textarea>
-                      </div>
-                      
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                        <button
-                          type="submit"
-                          className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                        >
-                          {isEditing ? 'Update Review' : 'Submit Review'}
-                        </button>
-                        
-                        {isEditing && (
+                  <form onSubmit={handleReviewSubmit}>
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Rating
+                      </label>
+                      <div className="flex space-x-1">
+                        {[1, 2, 3, 4, 5].map((star) => (
                           <button
+                            key={star}
                             type="button"
-                            onClick={() => {
-                              setIsEditing(false);
-                              setRating(5);
-                              setComment('');
-                              setUserReview({ rating: 5, comment: '' });
-                            }}
-                            className="text-gray-600 hover:text-gray-800"
+                            onClick={() => setRating(star)}
+                            className="focus:outline-none"
                           >
-                            Cancel Edit
+                            <svg
+                              className={`w-6 h-6 ${
+                                star <= rating ? 'text-yellow-400' : 'text-gray-300'
+                              }`}
+                              fill="currentColor"
+                              viewBox="0 0 20 20"
+                              xmlns="http://www.w3.org/2000/svg"
+                            >
+                              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                            </svg>
                           </button>
-                        )}
-                      </div>
-                    </form>
-                  ) : (
-                    <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded mb-4">
-                      <p>You need to book and stay at this property before leaving a review.</p>
-                      <div className="mt-2">
-                        <button
-                          onClick={() => document.querySelector('.booking-card').scrollIntoView({ behavior: 'smooth' })}
-                          className="text-indigo-600 hover:text-indigo-800 font-medium"
-                        >
-                          Book now to enable reviews
-                        </button>
+                        ))}
                       </div>
                     </div>
-                  )}
+                    
+                    <div className="mb-4">
+                      <label
+                        htmlFor="comment"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                      >
+                        Comment
+                      </label>
+                      <textarea
+                        id="comment"
+                        rows="4"
+                        value={comment}
+                        onChange={(e) => setComment(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                        placeholder="Share your experience with this property..."
+                        required
+                      ></textarea>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <button
+                        type="submit"
+                        className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                      >
+                        {isEditing ? 'Update Review' : 'Submit Review'}
+                      </button>
+                      
+                      {isEditing && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsEditing(false);
+                            setRating(5);
+                            setComment('');
+                            setUserReview({ rating: 5, comment: '' });
+                          }}
+                          className="text-gray-600 hover:text-gray-800"
+                        >
+                          Cancel Edit
+                        </button>
+                      )}
+                    </div>
+                  </form>
                 </div>
               )}
               
@@ -756,18 +674,19 @@ const PropertyDetails = () => {
               ) : reviews.length > 0 ? (
                 <div className="space-y-8">
                   {reviews.map((review, index) => {
+                    // Get userId from localStorage to check if this is the user's own review
                     const userInfo = localStorage.getItem('user');
                     const currentUser = userInfo ? JSON.parse(userInfo) : null;
                     const isOwnReview = currentUser && currentUser._id === review.userId;
                     
                     return (
                       <div key={index} className={`border-b border-gray-100 pb-6 last:border-0 ${isOwnReview ? 'bg-rose-50 p-4 rounded-lg' : ''}`}>
-                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-4">
-                          <div className="flex items-center gap-4">
+                        <div className="flex justify-between items-start mb-4">
+                          <div className="flex items-center">
                             <img 
                               src={`https://ui-avatars.com/api/?name=${encodeURIComponent(review.username || 'User')}&background=random`} 
                               alt="User" 
-                              className="w-12 h-12 rounded-full" 
+                              className="w-12 h-12 rounded-full mr-4" 
                             />
                             <div>
                               <h4 className="font-medium">
@@ -829,8 +748,8 @@ const PropertyDetails = () => {
           </div>
 
           {/* Booking Card */}
-          <div className="lg:sticky lg:top-8">
-            <div className="booking-card bg-white rounded-xl border shadow-lg p-4 sm:p-6">
+          <div className="relative">
+            <div className="sticky top-8 bg-white rounded-xl border shadow-lg p-6">
               <div className="flex items-center justify-between mb-6">
                 <span className="text-2xl font-bold">₹{property.price}</span>
                 <span className="text-gray-500">per night</span>

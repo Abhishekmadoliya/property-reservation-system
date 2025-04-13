@@ -1,36 +1,49 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Mail, Lock, User, Eye, EyeOff, Calendar } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Mail, Lock, User, Eye, EyeOff, Phone } from 'lucide-react';
+import axios from 'axios';
+import BackToHome from '../../components/BackToHome';
 
 const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
+    username: '',
     email: '',
     password: '',
-    birthdate: '',
-    agreeTerms: false
+    number: ''
   });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Implement registration logic here
-    console.log('Registration attempt:', formData);
+    try {
+      const response = await axios.post('http://localhost:3000/api/auth/register', formData);
+      console.log('Registration successful:', response.data);
+      
+      // Registration successful, redirect to login page
+      alert('Registration successful! Please login with your credentials.');
+      window.location.href = '/login';
+    } catch (error) {
+      console.error('Registration failed:', error.response?.data || error.message);
+      // Handle registration error
+      alert('Registration failed: ' + (error.response?.data?.message || error.message));
+    }
   };
 
   const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
+    const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: value
     }));
   };
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row w-full">
+    <div className="min-h-screen flex flex-col md:flex-row">
       {/* Left Side - Image */}
       <div className="hidden md:block md:w-1/2 relative">
+        <div className="absolute top-4 left-4 z-10">
+          <BackToHome />
+        </div>
         <img 
           src="https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&q=80&w=1600" 
           alt="Luxury vacation rental" 
@@ -45,6 +58,11 @@ const Register = () => {
       {/* Right Side - Registration Form */}
       <div className="w-full md:w-1/2 flex items-center justify-center p-6 md:p-12 bg-white">
         <div className="w-full max-w-md">
+          {/* Show BackToHome only on mobile */}
+          <div className="md:hidden mb-4">
+            <BackToHome />
+          </div>
+
           {/* Logo */}
           <div className="flex justify-center mb-8">
             <h1 className="text-3xl font-bold text-rose-500">StayHub</h1>
@@ -56,48 +74,25 @@ const Register = () => {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Name Fields - Two Columns */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">
-                  First Name
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                    <User className="h-5 w-5 text-gray-400" />
-                  </div>
-                  <input
-                    id="firstName"
-                    type="text"
-                    name="firstName"
-                    value={formData.firstName}
-                    onChange={handleChange}
-                    className="w-full pl-11 pr-4 py-3 rounded-lg border border-gray-300 focus:border-rose-500 focus:ring-2 focus:ring-rose-200 transition-all outline-none"
-                    placeholder="John"
-                    required
-                  />
+            {/* Username Field */}
+            <div className="space-y-2">
+              <label htmlFor="username" className="block text-sm font-medium text-gray-700">
+                Username
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                  <User className="h-5 w-5 text-gray-400" />
                 </div>
-              </div>
-              
-              <div className="space-y-2">
-                <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">
-                  Last Name
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                    <User className="h-5 w-5 text-gray-400" />
-                  </div>
-                  <input
-                    id="lastName"
-                    type="text"
-                    name="lastName"
-                    value={formData.lastName}
-                    onChange={handleChange}
-                    className="w-full pl-11 pr-4 py-3 rounded-lg border border-gray-300 focus:border-rose-500 focus:ring-2 focus:ring-rose-200 transition-all outline-none"
-                    placeholder="Doe"
-                    required
-                  />
-                </div>
+                <input
+                  id="username"
+                  type="text"
+                  name="username"
+                  value={formData.username}
+                  onChange={handleChange}
+                  className="w-full pl-11 pr-4 py-3 rounded-lg border border-gray-300 focus:border-rose-500 focus:ring-2 focus:ring-rose-200 transition-all outline-none"
+                  placeholder="Username"
+                  required
+                />
               </div>
             </div>
 
@@ -157,44 +152,22 @@ const Register = () => {
               <p className="text-xs text-gray-500">Password must be at least 8 characters long</p>
             </div>
 
-            {/* Birthdate Field */}
+            {/* Number Field */}
             <div className="space-y-2">
-              <label htmlFor="birthdate" className="block text-sm font-medium text-gray-700">
-                Date of Birth
+              <label htmlFor="number" className="block text-sm font-medium text-gray-700">
+                Phone Number
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                  <Calendar className="h-5 w-5 text-gray-400" />
-                </div>
                 <input
-                  id="birthdate"
-                  type="date"
-                  name="birthdate"
-                  value={formData.birthdate}
+                  id="number"
+                  type="tel"
+                  name="number"
+                  value={formData.number}
                   onChange={handleChange}
-                  className="w-full pl-11 pr-4 py-3 rounded-lg border border-gray-300 focus:border-rose-500 focus:ring-2 focus:ring-rose-200 transition-all outline-none"
+                  className="w-full pl-4 pr-4 py-3 rounded-lg border border-gray-300 focus:border-rose-500 focus:ring-2 focus:ring-rose-200 transition-all outline-none"
+                  placeholder="123-456-7890"
                   required
                 />
-              </div>
-            </div>
-
-            {/* Terms and Conditions */}
-            <div className="flex items-start">
-              <div className="flex items-center h-5">
-                <input
-                  id="agreeTerms"
-                  name="agreeTerms"
-                  type="checkbox"
-                  checked={formData.agreeTerms}
-                  onChange={handleChange}
-                  className="w-4 h-4 rounded border-gray-300 text-rose-500 focus:ring-rose-500"
-                  required
-                />
-              </div>
-              <div className="ml-3 text-sm">
-                <label htmlFor="agreeTerms" className="text-gray-600">
-                  I agree to the <a href="#" className="text-rose-500 hover:text-rose-600 font-medium">Terms of Service</a> and <a href="#" className="text-rose-500 hover:text-rose-600 font-medium">Privacy Policy</a>
-                </label>
               </div>
             </div>
 

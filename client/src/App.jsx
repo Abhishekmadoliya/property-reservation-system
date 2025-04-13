@@ -1,26 +1,43 @@
-import React, { useState } from 'react';
-import PropertyDetails from './pages/PropertyDetails';
+import React from 'react';
+import { Routes, Route } from 'react-router-dom';
+import Navbar from './components/Navbar';
+import Home from './pages/Home';
 import Login from './pages/Auth/Login';
 import Register from './pages/Auth/Register';
+import PropertyDetails from './pages/PropertyDetails';
+import BecomeHost from './pages/Auth/BecomeHost';
+import Profile from './pages/Profile';
+import Bookings from './pages/Bookings';
+import HostApplications from './pages/Admin/HostApplications';
+import Dashboard from './pages/Admin/Dashboard';
+import NavMenu from './components/NavMenu';
+import PropertyManagement from './pages/Host/PropertyManagement';
+import ApplicationTester from './pages/Host/ApplicationTester';
 
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import Home from './pages/Home';
 function App() {
- return (
-  <div >
-    <main>
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/property/:id" element={<PropertyDetails />} />
-        {/* <Route path="/search" element={<SearchResults />} />
-        <Route path="/favorites" element={<Favorites />} /> */}
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-      </Routes>
-    </main>
-  </div>
- )
-
+  return (
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <Navbar />
+      <main className="w-full flex-grow  ">
+        <div className="max-w-7xl mx-auto">
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/property/:id" element={<PropertyDetails />} />
+            <Route path="/become-host" element={<BecomeHost />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/bookings" element={<Bookings />} />
+            <Route path="/admin/host-applications" element={<HostApplications />} />
+            <Route path="/admin/dashboard" element={<Dashboard />} />
+            <Route path="/host/properties" element={<PropertyManagement />} />
+            <Route path="/host/application-status" element={<ApplicationTester />} />
+          </Routes>
+        </div>
+      </main>
+      <NavMenu className="mt-auto" />
+    </div>
+  );
 }
 
 export default App;
