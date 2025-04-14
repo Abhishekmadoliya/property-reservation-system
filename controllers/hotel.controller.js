@@ -74,7 +74,7 @@ const getHotelById = async (req, res) => {
     }
 };
 
-// Create new hotel (admin only)
+// Create new hotel (admin only) and host only
 const createHotel = async (req, res) => {
     try {
         const hotel = await Hotel.create(req.body);
