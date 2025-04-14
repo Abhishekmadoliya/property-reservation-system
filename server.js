@@ -56,7 +56,7 @@ app.use("/api/properties", propertyRouter);
 
 mongoose.connection.once("open", () => {
   console.log("Connected to DB");
-  app.listen(PORT, () => {
+  app.listen(process.env.PORT||3000, () => {
     console.log("Server is Up and Running on port", PORT);
   });
 });
