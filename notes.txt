@@ -1,0 +1,18 @@
+bugs in projects
+
+
+// two navbar problem in home (/)
+imported navbar in app,jsx which is glabal for every component
+also imported navbar in home with search functionality
+
+
+
+fileter in home have some issues
+
+
+become a host should be hiiden if user already a host
+
+if hotel is booked it should show its already booked instead of book hotel
+
+
+searchbar should not be in navbar it shoudl be in home and other components which have multiple Property

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { PlusCircle, Edit, Trash2, Image, MapPin, DollarSign, Users, CalendarRange, Tag, BedDouble, Bath, Home as HomeIcon, AlertTriangle, Clock, RefreshCw, Info } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Image, MapPin, DollarSign, IndianRupee, Users, CalendarRange, Tag, BedDouble, Bath, Home as HomeIcon, AlertTriangle, Clock, RefreshCw, Info } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import BackToHome from '../../components/BackToHome';
+import FixLocalStorageMismatch from '../../components/FixLocalStorageMismatch';
 
 const PropertyManagement = () => {
   const [properties, setProperties] = useState([]);
@@ -30,6 +31,36 @@ const PropertyManagement = () => {
     isAvailable: true,
   };
   const [formData, setFormData] = useState(initialFormState);
+
+  // Handle image upload
+  const handleImageUpload = (e) => {
+    // Convert file objects to URL objects
+    const files = Array.from(e.target.files);
+    const imageUrls = files.map(file => URL.createObjectURL(file));
+    
+    setFormData({
+      ...formData,
+      images: [...formData.images, ...imageUrls]
+    });
+  };
+
+  // Handle web image URL input
+  const [imageUrl, setImageUrl] = useState('');
+
+  const handleAddImageUrl = () => {
+    if (imageUrl.trim() !== '') {
+      // Basic URL validation
+      if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+        setFormData({
+          ...formData,
+          images: [...formData.images, imageUrl]
+        });
+        setImageUrl(''); // Clear the input field
+      } else {
+        setError('Please enter a valid URL starting with http:// or https://');
+      }
+    }
+  };
 
   // Helper function to show debug info
   const showDebugInfo = async () => {
@@ -256,67 +287,114 @@ const PropertyManagement = () => {
     }
   };
 
-  // Handle image upload
-  const handleImageUpload = (e) => {
-    // This is simplified - in a real app, you'd handle file upload to a cloud service
-    const files = Array.from(e.target.files);
-    const imageUrls = files.map(file => URL.createObjectURL(file));
-    
-    setFormData({
-      ...formData,
-      images: [...formData.images, ...imageUrls]
-    });
-  };
-
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      setError(null);
       const token = localStorage.getItem('token');
+      
+      if (!token) {
+        setError("Authentication token missing. Please log in again.");
+        return;
+      }
+      
+      // Get user info for host data
+      const userInfo = localStorage.getItem('user');
+      const user = userInfo ? JSON.parse(userInfo) : null;
+      const username = user?.username || 'Host';
+      
+      // Validate required fields
+      if (!formData.title.trim()) {
+        setError("Property name is required");
+        return;
+      }
+      
+      if (!formData.price || isNaN(parseInt(formData.price))) {
+        setError("Valid price is required");
+        return;
+      }
+      
+      if (!formData.location.trim()) {
+        setError("Location is required");
+        return;
+      }
+      
+      // Parse location into components (as best we can)
+      const locationParts = formData.location.split(',').map(part => part.trim());
+      let address = locationParts[0] || '';
+      let city = locationParts[0] || '';
+      // Ensure state is never empty
+      let state = locationParts.length > 1 ? locationParts[1] : 'Unknown';
+      
+      // If state is still empty, provide a default value
+      if (!state || state.trim() === '') {
+        state = 'Unknown';
+      }
       
       // Transform property data to match hotel model
       const hotelData = {
-        name: formData.title,
+        // Basic info - these are the required fields
+        name: formData.title.trim(),
+        description: formData.description.trim() || 'Beautiful property for rent',
+        address: address,
+        city: city,
+        state: state, // This is now guaranteed to have a value
+        country: "USA",
+        
+        // Property details - ensure all numbers are valid
+        price: parseInt(formData.price) || 0,
+        numberOfBathrooms: parseInt(formData.baths) || 1,
+        numberOfBeds: parseInt(formData.beds) || 1,
+        numberOfguest: parseInt(formData.guests) || 1,
+        numberOfBedrooms: parseInt(formData.beds) || 1, // Using beds as bedrooms
+        numberOfStudies: 0,
+        
+        // Categories and types
         category: formData.type,
+        propertyType: formData.type,
+        
+        // Images - ensure at least one default image
         image: formData.images.length > 0 ? formData.images[0] : 'https://a0.muscache.com/im/pictures/miso/Hosting-26117817/original/9da40e3c-5846-4359-bb41-05c27b09a8f5.jpeg?im_w=720',
         imageArr: formData.images,
-        address: formData.location.split(',')[0] || formData.location,
-        city: formData.location.split(',')[0] || formData.location,
-        state: formData.location.split(',')[1] || '',
-        country: 'USA',
-        price: parseInt(formData.price),
-        rating: 4.5, // Default rating
-        numberOfBathrooms: parseInt(formData.baths),
-        numberOfBeds: parseInt(formData.beds),
-        numberOfguest: parseInt(formData.guests),
-        numberOfBedrooms: parseInt(formData.beds), // Assuming 1 bed = 1 bedroom for simplicity
-        numberOfStudies: 0,
-        hostName: JSON.parse(localStorage.getItem('user'))?.username || 'Host',
+        
+        // Host information
+        hostName: username,
         hostJoinedOn: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long' }),
-        ameneties: formData.amenities,
-        healthAndSafety: ['Smoke alarm', 'Carbon monoxide alarm'],
-        houseRules: ['Check-in: 3:00 pm', 'Check out: 11:00 am'],
-        propertyType: formData.type,
-        isCancelable: true
+        
+        // Amenities and rules - ensure arrays
+        ameneties: Array.isArray(formData.amenities) ? formData.amenities : [],
+        healthAndSafety: ["Smoke alarm", "Carbon monoxide alarm"],
+        houseRules: ["Check-in: 3:00 pm", "Check out: 11:00 am"],
+        
+        // Availability
+        isAvailable: Boolean(formData.isAvailable),
+        isCancelable: true,
+        
+        // Rating - always provide a default
+        rating: 4.5
       };
       
       console.log('Submitting hotel data:', hotelData);
       
+      let response;
       if (isEditingProperty) {
-        await axios.put(`http://localhost:3000/api/hotels/${isEditingProperty}`, hotelData, {
+        response = await axios.put(`http://localhost:3000/api/hotels/${isEditingProperty}`, hotelData, {
           headers: {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json'
           }
         });
       } else {
-        await axios.post('http://localhost:3000/api/hotels', hotelData, {
+        response = await axios.post('http://localhost:3000/api/hotels', hotelData, {
           headers: {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json'
           }
         });
       }
+      
+      console.log('Server response:', response.data);
       
       // Reset form and states
       setFormData(initialFormState);
@@ -327,10 +405,35 @@ const PropertyManagement = () => {
       fetchProperties();
     } catch (err) {
       console.error('Error saving property:', err);
-      if (err.response && err.response.data && err.response.data.message) {
-        setError(err.response.data.message);
+      
+      // Log detailed error information
+      if (err.response) {
+        console.error('Error response data:', err.response.data);
+        console.error('Error response status:', err.response.status);
+        console.error('Error response headers:', err.response.headers);
+      }
+      
+      // Show detailed error message if available
+      if (err.response && err.response.data) {
+        if (err.response.data.error && err.response.data.error.includes('validation failed')) {
+          // Handle specific validation errors
+          const errorMessage = err.response.data.error;
+          const fieldMatch = errorMessage.match(/Path `([^`]+)` is required/);
+          if (fieldMatch && fieldMatch[1]) {
+            setError(`The field "${fieldMatch[1]}" is required. Please fill it in.`);
+          } else {
+            setError(`Validation error: ${errorMessage}`);
+          }
+        } else if (err.response.data.error === "ValidationError" || err.response.status === 400) {
+          // Handle general validation errors
+          setError(`Validation error: ${err.response.data.message || 'Please check all required fields.'}`);
+        } else {
+          setError(err.response.data.message || 
+                 (err.response.data.error ? `Server error: ${err.response.data.error}` : 
+                 'Server error occurred. Please try again later.'));
+        }
       } else {
-        setError('Failed to save property. Please try again.');
+        setError('Could not connect to the server. Please check your internet connection and try again.');
       }
     }
   };
@@ -485,6 +588,10 @@ const PropertyManagement = () => {
             <h2 className="text-2xl font-bold text-gray-900 mb-2">Access Restricted</h2>
             <p className="text-gray-600 mb-6">{error}</p>
             
+            <div className="w-full mb-6">
+              <FixLocalStorageMismatch />
+            </div>
+            
             {!userIsHost && (
               <div className="space-y-4 w-full">
                 <p className="text-gray-700">
@@ -637,7 +744,7 @@ const PropertyManagement = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Price per night ($)
+                    Price per night (₹)
                   </label>
                   <input
                     type="number"
@@ -782,12 +889,37 @@ const PropertyManagement = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Images
                 </label>
-                <div className="mt-1 flex items-center">
-                  <label className="flex items-center justify-center px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer w-full sm:w-auto">
-                    <Image className="w-5 h-5 mr-2 text-gray-500" />
-                    <span>Upload Images</span>
-                    <input type="file" className="hidden" multiple onChange={handleImageUpload} />
-                  </label>
+                
+                {/* Image Upload Options */}
+                <div className="space-y-4">
+                  {/* From PC */}
+                  <div className="mt-1 flex items-center">
+                    <label className="flex items-center justify-center px-4 py-2 bg-white border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer w-full sm:w-auto">
+                      <Image className="w-5 h-5 mr-2 text-gray-500" />
+                      <span>Upload from PC</span>
+                      <input type="file" className="hidden" multiple onChange={handleImageUpload} accept="image/*" />
+                    </label>
+                  </div>
+                  
+                  {/* From Web URL */}
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <div className="flex-grow">
+                      <input
+                        type="text"
+                        placeholder="Enter image URL (https://...)"
+                        value={imageUrl}
+                        onChange={(e) => setImageUrl(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-rose-500"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleAddImageUrl}
+                      className="px-4 py-2 bg-rose-100 text-rose-700 rounded-md hover:bg-rose-200 transition"
+                    >
+                      Add URL
+                    </button>
+                  </div>
                 </div>
                 
                 {formData.images.length > 0 && (
@@ -870,7 +1002,8 @@ const PropertyManagement = () => {
                   <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
                     <h3 className="text-lg font-semibold text-gray-900 line-clamp-1">{property.title}</h3>
                     <div className="flex items-center text-rose-600 font-semibold">
-                      <DollarSign className="h-4 w-4 mr-1" />
+                      <IndianRupee className="h-4 w-4 mr-1" />
+                      
                       <span>{property.price}</span>
                       <span className="text-gray-500 text-sm ml-1">night</span>
                     </div>

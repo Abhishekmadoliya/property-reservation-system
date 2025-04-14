@@ -13,12 +13,13 @@ import Dashboard from './pages/Admin/Dashboard';
 import NavMenu from './components/NavMenu';
 import PropertyManagement from './pages/Host/PropertyManagement';
 import ApplicationTester from './pages/Host/ApplicationTester';
+import FixLocalStorageMismatch from './components/FixLocalStorageMismatch';
 
 function App() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <Navbar />
-      <main className="w-full flex-grow  ">
+      <main className="w-full flex-grow">
         <div className="max-w-7xl mx-auto">
           <Routes>
             <Route path="/" element={<Home />} />
@@ -32,6 +33,7 @@ function App() {
             <Route path="/admin/dashboard" element={<Dashboard />} />
             <Route path="/host/properties" element={<PropertyManagement />} />
             <Route path="/host/application-status" element={<ApplicationTester />} />
+            <Route path="/fix-sync-issue" element={<FixLocalStorageMismatch />} />
           </Routes>
         </div>
       </main>

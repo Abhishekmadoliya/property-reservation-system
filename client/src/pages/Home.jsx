@@ -6,6 +6,7 @@ import { Link } from 'react-router-dom';
 import PropertyCard from '../components/PropertyCard';
 import Navbar from '../components/Navbar';
 import FilterBar from '../components/FilterBar';
+// import FixLocalStorageMismatch from '../components/FixLocalStorageMismatch';
 
 // Define potential API base URLs to try
 const API_URLS = [
@@ -399,7 +400,8 @@ const Home = () => {
 
     return (
       <div className="min-h-screen bg-gray-50">
-        {/* <Navbar onSearch={handleSearch} searchQuery={searchQuery} /> */}
+        {/* <FixLocalStorageMismatch /> */}
+        <Navbar onSearch={handleSearch} searchQuery={searchQuery} />
         <FilterBar activeFilter={activeFilter} onFilterChange={setActiveFilter} />
         
         <main className="w-full">
