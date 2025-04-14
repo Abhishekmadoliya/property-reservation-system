@@ -17,14 +17,11 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchDashboardStats = async () => {
       try {
+        setLoading(true);
         const token = localStorage.getItem('token');
-        if (!token) {
-          return;
-        }
-
-        // This endpoint doesn't exist yet, but will fetch dashboard stats
+        
         const response = await axios.get(
-          'http://localhost:3000/api/admin/dashboard-stats',
+          'https://property-reservation-system.onrender.com/api/admin/dashboard-stats',
           {
             headers: {
               'Authorization': `Bearer ${token}`

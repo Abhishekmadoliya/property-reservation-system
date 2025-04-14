@@ -73,7 +73,7 @@ const PropertyManagement = () => {
       let serverData = null;
       if (token) {
         try {
-          const response = await axios.get('http://localhost:3000/api/host/application-status', {
+          const response = await axios.get('https://property-reservation-system.onrender.com/api/host/application-status', {
             headers: {
               Authorization: `Bearer ${token}`
             }
@@ -111,7 +111,7 @@ const PropertyManagement = () => {
         return false;
       }
 
-      const response = await axios.get('http://localhost:3000/api/host/application-status', {
+      const response = await axios.get('https://property-reservation-system.onrender.com/api/host/application-status', {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -196,19 +196,10 @@ const PropertyManagement = () => {
   const fetchProperties = async () => {
     try {
       setLoading(true);
-      // Get token from localStorage
+      await verifyHostStatus();
+      
       const token = localStorage.getItem('token');
-      
-      // Get host username to filter hotels
-      const user = JSON.parse(localStorage.getItem('user'));
-      const hostUsername = user?.username;
-      
-      if (!hostUsername) {
-        throw new Error('User information not found');
-      }
-      
-      // Fetch all hotels
-      const response = await axios.get('http://localhost:3000/api/hotels', {
+      const response = await axios.get('https://property-reservation-system.onrender.com/api/hotels', {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -216,7 +207,7 @@ const PropertyManagement = () => {
       
       // Filter hotels that belong to the current host
       const hostHotels = response.data.data.filter(hotel => 
-        hotel.hostName === hostUsername
+        hotel.hostName === JSON.parse(localStorage.getItem('user')).username
       );
       
       // Format properties for the UI
@@ -379,14 +370,14 @@ const PropertyManagement = () => {
       
       let response;
       if (isEditingProperty) {
-        response = await axios.put(`http://localhost:3000/api/hotels/${isEditingProperty}`, hotelData, {
+        response = await axios.put(`https://property-reservation-system.onrender.com/api/hotels/${isEditingProperty}`, hotelData, {
           headers: {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json'
           }
         });
       } else {
-        response = await axios.post('http://localhost:3000/api/hotels', hotelData, {
+        response = await axios.post('https://property-reservation-system.onrender.com/api/hotels', hotelData, {
           headers: {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json'
@@ -463,7 +454,7 @@ const PropertyManagement = () => {
     if (window.confirm('Are you sure you want to delete this property?')) {
       try {
         const token = localStorage.getItem('token');
-        await axios.delete(`http://localhost:3000/api/hotels/${id}`, {
+        await axios.delete(`https://property-reservation-system.onrender.com/api/hotels/${id}`, {
           headers: {
             Authorization: `Bearer ${token}`
           }
@@ -521,7 +512,7 @@ const PropertyManagement = () => {
         return;
       }
 
-      const response = await axios.get('http://localhost:3000/api/host/application-status', {
+      const response = await axios.get('https://property-reservation-system.onrender.com/api/host/application-status', {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -562,6 +553,29 @@ const PropertyManagement = () => {
       console.error('Error syncing data:', err);
       setError('Failed to sync with server: ' + (err.response?.data?.message || err.message));
       setLoading(false);
+    }
+  };
+
+  // Verify host status again before showing dashboard
+  const verifyHostStatus = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      
+      if (!token) {
+        navigate('/login');
+        return false;
+      }
+      
+      const response = await axios.get('https://property-reservation-system.onrender.com/api/host/application-status', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      // ... rest of the function ...
+    } catch (error) {
+      // ... error handling ...
+      return false;
     }
   };
 

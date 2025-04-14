@@ -40,7 +40,7 @@ const BecomeHost = () => {
         }
 
         // Then verify with the server
-        const response = await axios.get('http://localhost:3000/api/host/application-status', {
+        const response = await axios.get('https://property-reservation-system.onrender.com/api/host/application-status', {
           headers: {
             Authorization: `Bearer ${token}`
           }
@@ -89,7 +89,7 @@ const BecomeHost = () => {
       }
 
       const response = await axios.post(
-        'http://localhost:3000/api/host/apply',
+        'https://property-reservation-system.onrender.com/api/host/apply',
         formData,
         {
           headers: {

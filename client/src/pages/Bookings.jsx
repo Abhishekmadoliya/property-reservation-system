@@ -9,6 +9,7 @@ const Bookings = () => {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [actionLoading, setActionLoading] = useState(null);
 
   useEffect(() => {
     const fetchBookings = async () => {
@@ -17,11 +18,14 @@ const Bookings = () => {
         const token = localStorage.getItem('token');
         
         if (!token) {
-          navigate('/login', { state: { from: '/bookings' } });
+          setError('You must be logged in to view bookings');
+          setTimeout(() => {
+            navigate('/login');
+          }, 2000);
           return;
         }
         
-        const response = await fetch('http://localhost:3000/api/users/bookings', {
+        const response = await fetch('https://property-reservation-system.onrender.com/api/users/bookings', {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -85,8 +89,10 @@ const Bookings = () => {
     }
     
     try {
+      setActionLoading(bookingId);
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:3000/api/bookings/${bookingId}`, {
+      
+      const response = await fetch(`https://property-reservation-system.onrender.com/api/bookings/${bookingId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -108,6 +114,8 @@ const Bookings = () => {
     } catch (error) {
       console.error('Error cancelling booking:', error);
       alert(`Failed to cancel booking: ${error.message}`);
+    } finally {
+      setActionLoading(null);
     }
   };
 

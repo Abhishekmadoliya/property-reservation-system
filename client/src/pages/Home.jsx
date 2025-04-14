@@ -11,7 +11,7 @@ import FilterBar from '../components/FilterBar';
 // Define potential API base URLs to try
 const API_URLS = [
   'http://localhost:8765',
-  'http://localhost:3000',
+  'https://property-reservation-system.onrender.com',
   'http://localhost:3500',
   'http://localhost:5000',
   'http://localhost:8080'
@@ -132,7 +132,7 @@ const Home = () => {
           // First, try to fetch from hotels API
           try {
             console.log('Trying to fetch from hotels API endpoint');
-            const response = await axios.get('http://localhost:3000/api/hotels');
+            const response = await axios.get('https://property-reservation-system.onrender.com/api/hotels');
             console.log('Hotels API Response:', response);
             
             if (response.data && response.data.success && response.data.data && response.data.data.length > 0) {
@@ -192,7 +192,7 @@ const Home = () => {
             // Try to get properties from properties API endpoint
             try {
               console.log('Trying to fetch from properties API endpoint');
-              const response = await axios.get('http://localhost:3000/api/properties/public');
+              const response = await axios.get('https://property-reservation-system.onrender.com/api/properties/public');
               console.log('Properties API Response:', response);
               
               if (response.data && response.data.success && response.data.properties) {

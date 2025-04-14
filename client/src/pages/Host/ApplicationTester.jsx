@@ -34,14 +34,14 @@ const ApplicationTester = () => {
       const userInfo = userInfoString ? JSON.parse(userInfoString) : null;
       
       // Get fresh data from server
-      const response = await axios.get('http://localhost:3000/api/host/application-status', {
+      const response = await axios.get('https://property-reservation-system.onrender.com/api/host/application-status', {
         headers: {
           Authorization: `Bearer ${token}`
         }
       });
       
       // Get detailed debug information
-      const debugResponse = await axios.get('http://localhost:3000/api/host/debug-status', {
+      const debugResponse = await axios.get('https://property-reservation-system.onrender.com/api/host/debug-status', {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -132,7 +132,7 @@ const ApplicationTester = () => {
 
       const token = localStorage.getItem('token');
       const response = await axios.post(
-        'http://localhost:3000/api/host/process-application',
+        'https://property-reservation-system.onrender.com/api/host/process-application',
         {
           userId: userData.debugData.id,
           status: 'approved'

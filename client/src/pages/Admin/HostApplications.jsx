@@ -21,7 +21,7 @@ const HostApplications = () => {
         }
 
         const response = await axios.get(
-          'http://localhost:3000/api/host/applications',
+          'https://property-reservation-system.onrender.com/api/host/applications',
           {
             headers: {
               'Authorization': `Bearer ${token}`
@@ -54,7 +54,7 @@ const HostApplications = () => {
       }
 
       const response = await axios.post(
-        'http://localhost:3000/api/host/process-application',
+        'https://property-reservation-system.onrender.com/api/host/process-application',
         { userId, status },
         {
           headers: {

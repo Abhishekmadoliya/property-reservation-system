@@ -45,7 +45,7 @@ const Profile = () => {
       }
 
       // Call debug endpoint to check token
-      const response = await axios.get('http://localhost:3000/api/users/debug-token', {
+      const response = await axios.get('https://property-reservation-system.onrender.com/api/users/debug-token', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -73,18 +73,14 @@ const Profile = () => {
 
   const fetchUserProfile = async () => {
     try {
+      setLoading(true);
       const token = localStorage.getItem('token');
       if (!token) {
-        setError('You are not logged in. Please log in to view your profile.');
-        setLoading(false);
-        setTimeout(() => {
-          navigate('/login');
-        }, 2000);
-        return;
+        throw new Error('No authentication token found');
       }
 
       console.log('Fetching profile with token:', token);
-      const response = await axios.get('http://localhost:3000/api/users/profile', {
+      const response = await axios.get('https://property-reservation-system.onrender.com/api/users/profile', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -114,7 +110,6 @@ const Profile = () => {
       } else {
         setError('Failed to fetch profile data');
       }
-      setLoading(false);
     } catch (err) {
       console.error('Profile fetch error:', err);
       
@@ -128,6 +123,7 @@ const Profile = () => {
       } else {
         setError(err.response?.data?.message || 'Failed to fetch profile');
       }
+    } finally {
       setLoading(false);
     }
   };
@@ -154,6 +150,7 @@ const Profile = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      setUpdating(true);
       const token = localStorage.getItem('token');
       if (!token) {
         setError('You are not logged in. Please log in to update your profile.');
@@ -174,7 +171,7 @@ const Profile = () => {
       console.log('Updating profile with data:', updateData);
       
       const response = await axios.put(
-        'http://localhost:3000/api/users/profile',
+        'https://property-reservation-system.onrender.com/api/users/profile',
         updateData,
         {
           headers: {
@@ -219,6 +216,8 @@ const Profile = () => {
       } else {
         setError('Network error. Please try again.');
       }
+    } finally {
+      setUpdating(false);
     }
   };
 

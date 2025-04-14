@@ -12,20 +12,26 @@ const Register = () => {
     password: '',
     number: ''
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
     try {
-      const response = await axios.post('http://localhost:3000/api/auth/register', formData);
-      console.log('Registration successful:', response.data);
+      setIsSubmitting(true);
+      setError('');
       
-      // Registration successful, redirect to login page
-      alert('Registration successful! Please login with your credentials.');
-      window.location.href = '/login';
+      // Validate form data...
+      
+      // Call registration API endpoint
+      const response = await axios.post('https://property-reservation-system.onrender.com/api/auth/register', formData);
+      
+      // Process response...
     } catch (error) {
-      console.error('Registration failed:', error.response?.data || error.message);
-      // Handle registration error
-      alert('Registration failed: ' + (error.response?.data?.message || error.message));
+      // Handle errors...
+    } finally {
+      setIsSubmitting(false);
     }
   };
 

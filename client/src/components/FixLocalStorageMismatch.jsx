@@ -32,7 +32,7 @@ const FixLocalStorageMismatch = () => {
       const localUser = userString ? JSON.parse(userString) : null;
 
       // Get data from server
-      const response = await axios.get('http://localhost:3000/api/host/application-status', {
+      const response = await axios.get('https://property-reservation-system.onrender.com/api/host/application-status', {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -92,7 +92,7 @@ const FixLocalStorageMismatch = () => {
       }
 
       // Get fresh data from server
-      const response = await axios.get('http://localhost:3000/api/host/application-status', {
+      const response = await axios.get('https://property-reservation-system.onrender.com/api/host/application-status', {
         headers: {
           Authorization: `Bearer ${token}`
         }

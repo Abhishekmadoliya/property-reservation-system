@@ -11,18 +11,24 @@ const Login = () => {
     password: '',
   });
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
     
     try {
-      // Show that we're attempting login
-      console.log('Attempting login with:', formData);
+      setIsLoading(true);
+      setError('');
       
-      // Make the API request
-      const response = await axios.post('http://localhost:3000/api/auth/login', formData);
+      // Validate form data
+      if (!formData.email || !formData.password) {
+        setError('Please fill all fields');
+        return;
+      }
+      
+      // Call the login API
+      const response = await axios.post('https://property-reservation-system.onrender.com/api/auth/login', formData);
       
       // Log full response for debugging
       console.log('Full response:', response);
@@ -62,6 +68,8 @@ const Login = () => {
         console.error('Error message:', error.message);
         setError('Login failed: ' + error.message);
       }
+    } finally {
+      setIsLoading(false);
     }
   };
 

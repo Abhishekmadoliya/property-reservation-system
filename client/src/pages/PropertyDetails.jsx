@@ -50,7 +50,7 @@ const PropertyDetails = () => {
     try {
       setCheckingBooking(true);
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:3000/api/users/bookings', {
+      const response = await fetch('https://property-reservation-system.onrender.com/api/users/bookings', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -86,7 +86,7 @@ const PropertyDetails = () => {
   const fetchPropertyDetails = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`http://localhost:3000/api/hotels/${id}`);
+      const response = await axios.get(`https://property-reservation-system.onrender.com/api/hotels/${id}`);
       
       // Check if we have data in the response
       if (!response.data) {
@@ -147,7 +147,7 @@ const PropertyDetails = () => {
   // Fetch reviews for this property
   const fetchReviews = async () => {
     try {
-      const response = await fetch(`http://localhost:3000/api/reviews/hotel/${id}`);
+      const response = await fetch(`https://property-reservation-system.onrender.com/api/reviews/hotel/${id}`);
       if (!response.ok) {
         throw new Error('Failed to fetch reviews');
       }
@@ -225,7 +225,7 @@ const PropertyDetails = () => {
     try {
       // First verify if user is still authenticated
       const token = localStorage.getItem('token');
-      const userResponse = await fetch('http://localhost:3000/api/users/me', {
+      const userResponse = await fetch('https://property-reservation-system.onrender.com/api/users/me', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -244,8 +244,8 @@ const PropertyDetails = () => {
       };
 
       const url = isEditing 
-        ? `http://localhost:3000/api/reviews/${userReview.id}` 
-        : `http://localhost:3000/api/reviews/${id}`;
+        ? `https://property-reservation-system.onrender.com/api/reviews/${userReview.id}` 
+        : `https://property-reservation-system.onrender.com/api/reviews/${id}`;
       
       const method = isEditing ? 'PUT' : 'POST';
 
@@ -341,7 +341,7 @@ const PropertyDetails = () => {
       }
 
       // Create booking
-      const response = await fetch('http://localhost:3000/api/bookings', {
+      const response = await fetch('https://property-reservation-system.onrender.com/api/bookings', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -417,7 +417,7 @@ const PropertyDetails = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:3000/api/reviews/${reviewId}`, {
+      const response = await fetch(`https://property-reservation-system.onrender.com/api/reviews/${reviewId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
