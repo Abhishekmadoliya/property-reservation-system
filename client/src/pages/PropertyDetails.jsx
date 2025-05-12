@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Heart, Star, Share, MapPin, Users, Calendar, Check, ArrowLeft, ThumbsUp, Edit, Trash } from 'lucide-react';
 import axios from 'axios';
-import Navbar from '../components/Navbar';
 import BackToHome from '../components/BackToHome';
 
 const PropertyDetails = () => {
@@ -245,9 +244,18 @@ const PropertyDetails = () => {
 
       const url = isEditing 
         ? `https://property-reservation-system.onrender.com/api/reviews/${userReview.id}` 
-        : `https://property-reservation-system.onrender.com/api/reviews/${id}`;
+        : `https://property-reservation-system.onrender.com/api/reviews/hotel/${id}`;
       
       const method = isEditing ? 'PUT' : 'POST';
+
+      // Debug log
+      console.log('Submitting review request:', {
+        url,
+        method,
+        hotelId: id,
+        reviewData,
+        isEditing
+      });
 
       const response = await fetch(url, {
         method: method,
@@ -258,14 +266,34 @@ const PropertyDetails = () => {
         body: JSON.stringify(reviewData)
       });
 
+      // Debug response
+      console.log('Review submission response status:', response.status, response.statusText);
+
       if (response.status === 401 || response.status === 403) {
         setReviewSubmitError("Your login session has expired. Please log in again to submit a review.");
         return;
       }
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to submit review');
+        // Check content type to handle different error formats
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+          const errorData = await response.json();
+          // Check for duplicate review error
+          if (errorData.message && errorData.message.includes("already reviewed")) {
+            setReviewSubmitError("You have already reviewed this property. Please edit your existing review.");
+            
+            // Refresh reviews to show the existing review
+            fetchReviews();
+            return;
+          }
+          throw new Error(errorData.message || 'Failed to submit review');
+        } else {
+          // Handle non-JSON responses
+          const textError = await response.text();
+          console.error('Non-JSON error response:', textError);
+          throw new Error('Server returned an invalid response. Please try again later.');
+        }
       }
 
       // Reset form
@@ -283,6 +311,7 @@ const PropertyDetails = () => {
         setReviewSuccess(false);
       }, 3000);
     } catch (error) {
+      console.error('Review submission error:', error);
       setReviewSubmitError(error.message || 'An error occurred while submitting your review');
     }
   };
@@ -441,7 +470,6 @@ const PropertyDetails = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-white">
-        <Navbar />
         <main className="w-full px-4 sm:px-6 lg:px-8 py-6">
           <LoadingSkeleton />
         </main>
@@ -452,7 +480,6 @@ const PropertyDetails = () => {
   if (!property) {
     return (
       <div className="min-h-screen bg-white">
-        <Navbar />
         <main className="w-full px-4 sm:px-6 lg:px-8 py-6">
           <div className="text-center py-12">
             <p className="text-gray-500 text-lg">Property not found.</p>
@@ -464,8 +491,6 @@ const PropertyDetails = () => {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* <Navbar /> */}
-      
       {/* Back Button */}
       <div className="w-full px-4 sm:px-6 lg:px-8 py-4">
         <BackToHome />

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
@@ -16,13 +16,19 @@ import ApplicationTester from './pages/Host/ApplicationTester';
 import FixLocalStorageMismatch from './components/FixLocalStorageMismatch';
 
 function App() {
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const handleSearch = (query) => {
+    setSearchQuery(query);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      <Navbar />
+      <Navbar onSearch={handleSearch} searchQuery={searchQuery} />
       <main className="w-full flex-grow">
         <div className="max-w-7xl mx-auto">
           <Routes>
-            <Route path="/" element={<Home />} />
+            <Route path="/" element={<Home searchQuery={searchQuery} />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/property/:id" element={<PropertyDetails />} />

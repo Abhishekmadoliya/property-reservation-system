@@ -4,7 +4,6 @@ import axios from 'axios';
 import { Link } from 'react-router-dom';
 
 import PropertyCard from '../components/PropertyCard';
-import Navbar from '../components/Navbar';
 import FilterBar from '../components/FilterBar';
 // import FixLocalStorageMismatch from '../components/FixLocalStorageMismatch';
 
@@ -105,9 +104,8 @@ const FALLBACK_DATA = [
   }
 ];
 
-const Home = () => {
+const Home = ({ searchQuery }) => {
     const [activeFilter, setActiveFilter] = useState('All');
-    const [searchQuery, setSearchQuery] = useState('');
     const [properties, setProperties] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -373,10 +371,6 @@ const Home = () => {
       fetchProperties();
     }, []);
   
-    const handleSearch = (query) => {
-      setSearchQuery(query);
-    };
-
     const handleFilterChange = (name, value) => {
       setFilters({
         ...filters,
@@ -401,7 +395,6 @@ const Home = () => {
     return (
       <div className="min-h-screen bg-gray-50">
         {/* <FixLocalStorageMismatch /> */}
-        <Navbar onSearch={handleSearch} searchQuery={searchQuery} />
         <FilterBar activeFilter={activeFilter} onFilterChange={setActiveFilter} />
         
         <main className="w-full">
@@ -535,7 +528,6 @@ const Home = () => {
                 <p className="mt-2 text-sm text-gray-500 sm:text-base">Try adjusting your search or filters to find what you're looking for.</p>
                 <button 
                   onClick={() => {
-                    setSearchQuery('');
                     setFilters({
                       priceRange: [0, 5000],
                       propertyType: 'all',
