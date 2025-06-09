@@ -27,6 +27,7 @@ const connectDB = require("./config/dbconfig");
 
 const app = express();
 
+
 app.use(cors());
 app.use(express.json());
 app.use(cookieParser());
@@ -41,15 +42,15 @@ app.get("/", (req, res) => {
 app.use("/api/hoteldata", hotelDataAddedToDBRouter);
 app.use("/api/categorydata", categoryDataAddedToDBRouter);
 app.use("/api/hotels", hotelRouter);
-app.use("/api/category", categoryRouter);
+// app.use("/api/category", categoryRouter);
 app.use("/api/hotels/single", singleHotelRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/wishlist", wishlistRouter);
 app.use("/api/users", userRouter);
 app.use("/api/bookings", bookingRouter);
 app.use("/api/reviews", reviewRouter);
-app.use("/api/payments", paymentRouter);
-app.use("/api/filters", filterRouter);
+// app.use("/api/payments", paymentRouter);
+// app.use("/api/filters", filterRouter);
 app.use("/api/admin", adminRouter);
 app.use("/api/host", hostRouter);
 app.use("/api/properties", propertyRouter);
