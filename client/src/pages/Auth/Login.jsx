@@ -35,7 +35,7 @@ const Login = () => {
       
       // Check if we have a successful response with the correct structure
       if (response.data && response.data.success && response.data.data && response.data.data.token) {
-        console.log('Login successful, setting token and redirecting');
+        console.log('Welcome back! Login successful, setting token and redirecting');
         
         // Store the token - note that it's inside response.data.data
         localStorage.setItem('token', response.data.data.token);
